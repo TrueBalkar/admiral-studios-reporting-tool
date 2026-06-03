@@ -33,3 +33,5 @@ yarn-error.log*
 
 # prisma generated client
 /node_modules/.prisma
+
+.vercel
