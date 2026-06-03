@@ -20,7 +20,7 @@ A Notion-style internal platform for storing, organizing, viewing, and sharing *
 
 - [Next.js 14](https://nextjs.org/) (App Router) + React 18
 - Tailwind CSS
-- Prisma ORM + SQLite
+- Prisma ORM + PostgreSQL
 - [TipTap](https://tiptap.dev/) (Markdown editor) + react-markdown
 - jose (JWT) + bcryptjs
 
@@ -32,7 +32,7 @@ npm install
 
 # 2. Create your env file
 cp .env.example .env
-#   then edit JWT_SECRET
+#   then set DATABASE_URL + DIRECT_URL (Postgres) and JWT_SECRET
 
 # 3. Set up the database
 npx prisma db push
@@ -49,6 +49,20 @@ npm run dev
 npm run build
 npm run start
 ```
+
+## Deploying to Vercel
+
+1. Create a free **Neon** Postgres database (Vercel dashboard → Storage → Neon, or [neon.tech](https://neon.tech)).
+2. In your Vercel project's **Environment Variables**, set:
+   - `DATABASE_URL` — Neon **pooled** connection string (host contains `-pooler`)
+   - `DIRECT_URL` — Neon **direct** connection string
+   - `JWT_SECRET` — a long random string
+3. Push the schema and seed the database once (from your machine, with the same env vars):
+   ```bash
+   npx prisma db push
+   npm run db:seed
+   ```
+4. Deploy. The build runs `prisma generate` automatically so the Prisma Client is always up to date on Vercel.
 
 ## Demo accounts
 

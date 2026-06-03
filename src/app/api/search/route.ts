@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   }
 
   const folders = await prisma.folder.findMany({
-    where: { AND: [accessFilter, { OR: [{ name: { contains: q } }, { description: { contains: q } }] }] },
+    where: { AND: [accessFilter, { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] }] },
     include: { _count: { select: { reports: true } } },
     take: 10,
   })
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
     where: {
       folderId: { in: accessibleFolderIds },
       OR: [
-        { title: { contains: q } },
-        { fileName: { contains: q } },
-        { tags: { contains: q } },
-        { content: { contains: q } },  // full-text search inside content
+        { title: { contains: q, mode: 'insensitive' } },
+        { fileName: { contains: q, mode: 'insensitive' } },
+        { tags: { contains: q, mode: 'insensitive' } },
+        { content: { contains: q, mode: 'insensitive' } },  // full-text search inside content
       ],
     },
     include: {
