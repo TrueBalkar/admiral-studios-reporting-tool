@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("SALES")
+  theme     String   @default("light")
+  createdAt DateTime @default(now())
+
+  createdFolders  Folder[]       @relation("FolderCreator")
+  uploadedReports Report[]
+  sharedFolders   FolderShare[]  @relation("SharedUser")
+  pinnedFolders   PinnedFolder[]
+  activities      Activity[]
+  comments        Comment[]
+  notifications   Notification[]
+  reportViews     ReportView[]
+  reportVersions  ReportVersion[]
+  publicLinks     PublicShareLink[]
+}
+
+model CustomRole {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isBuiltIn Boolean  @default(false)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("CUSTOM")
+  description String?
+  color       String?
+  createdById String
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy  User           @relation("FolderCreator", fields: [createdById], references: [id])
+  parent     Folder?        @relation("FolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Folder[]       @relation("FolderChildren")
+  reports    Report[]
+  shares     FolderShare[]
+  pinnedBy   PinnedFolder[]
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  title        String
+  folderId     String
+  uploadedById String
+  fileName     String
+  fileType     String   @default("HTML")
+  content      String
+  tags         String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  folder     Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  uploadedBy User            @relation(fields: [uploadedById], references: [id])
+  comments   Comment[]
+  views      ReportView[]
+  versions   ReportVersion[]
+  publicLinks PublicShareLink[]
+}
+
+model FolderShare {
+  id         String   @id @default(cuid())
+  folderId   String
+  shareType  String
+  roleTarget String?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user   User?  @relation("SharedUser", fields: [userId], references: [id])
+}
+
+model PinnedFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  folderId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, folderId])
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  userId     String
+  userName   String
+  action     String
+  targetId   String?
+  targetName String?
+  folderId   String?
+  folderName String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  reportId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ReportView {
+  id       String   @id @default(cuid())
+  userId   String
+  reportId String
+  viewedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([reportId])
+}
+
+model ReportVersion {
+  id           String   @id @default(cuid())
+  reportId     String
+  versionNum   Int
+  content      String
+  fileName     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  report     Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+model PublicShareLink {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  reportId    String
+  password    String?
+  expiresAt   DateTime?
+  viewCount   Int       @default(0)
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}

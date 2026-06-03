@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# database (local SQLite — regenerate with prisma db push + seed)
+*.db
+*.db-journal
+/prisma/dev.db
+/prisma/*.db
+
+# env / secrets
+.env
+.env*.local
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/
+
+# prisma generated client
+/node_modules/.prisma
