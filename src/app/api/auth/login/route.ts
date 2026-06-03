@@ -33,7 +33,14 @@ export async function POST(req: NextRequest) {
       path: '/',
     })
     return res
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    console.error('Login error:', message)
+    // Surface a hint for known setup issues without leaking internals
+    const isSetup = /relation .* does not exist|table .* does not exist|Environment variable not found|Can't reach database server|P10\d\d|P20\d\d/i.test(message)
+    return NextResponse.json(
+      { error: isSetup ? `Database not ready: ${message}` : 'Server error' },
+      { status: 500 }
+    )
   }
 }
