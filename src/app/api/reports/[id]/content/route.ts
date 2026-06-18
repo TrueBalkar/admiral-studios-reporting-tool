@@ -26,9 +26,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (!hasAccess) return new NextResponse('Forbidden', { status: 403 })
 
+  // HTML is rendered in an iframe; everything else (Markdown text, Excel base64,
+  // link URLs) is fetched as plain text by the client and handled there.
+  const contentType = report.fileType === 'HTML' ? 'text/html' : 'text/plain'
+
   return new NextResponse(report.content, {
     headers: {
-      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Type': `${contentType}; charset=utf-8`,
       'X-Content-Type-Options': 'nosniff',
     },
   })

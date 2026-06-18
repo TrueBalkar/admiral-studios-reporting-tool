@@ -6,10 +6,11 @@ import Link from 'next/link'
 import {
   Upload, Share2, Trash2, Edit2, FileText, MoreVertical, Loader2,
   Calendar, User, ArrowLeft, FolderOpen, Plus, Search, SortAsc,
-  Filter, FileCode, CheckSquare, Square, MoveRight, Palette, X,
+  Filter, CheckSquare, Square, MoveRight, Palette, X,
   Tag, ChevronRight,
 } from 'lucide-react'
 import { FolderTypeBadge } from '@/components/ui/Badge'
+import { ReportIconTile } from '@/components/ui/ReportIcon'
 import UploadReportModal from '@/components/UploadReportModal'
 import ShareModal from '@/components/ShareModal'
 import CreateFolderModal from '@/components/CreateFolderModal'
@@ -466,13 +467,7 @@ export default function FolderPage() {
 
                 <Link href={`/folders/${id}/reports/${report.id}`} className={cn('block p-5 pb-3', bulkMode && 'pointer-events-none')}>
                   <div className="flex items-start gap-3">
-                    <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
-                      report.fileType === 'MD' ? 'bg-violet-50' : 'bg-blue-50')}>
-                      {report.fileType === 'MD'
-                        ? <FileCode className="w-5 h-5 text-violet-500" />
-                        : <FileText className="w-5 h-5 text-blue-500" />
-                      }
-                    </div>
+                    <ReportIconTile type={report.fileType} className="w-9 h-9" />
                     <div className="min-w-0">
                       <h3 className="font-medium text-gray-900 text-sm leading-snug group-hover:text-blue-600 transition-colors truncate">
                         {report.title}

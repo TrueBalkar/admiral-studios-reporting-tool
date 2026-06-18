@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   FolderOpen, FileText, Users, Upload, Pin, PinOff,
-  Clock, Share2, Loader2, AlertTriangle, FileCode, History,
+  Clock, Share2, Loader2, AlertTriangle, History,
 } from 'lucide-react'
 import { FolderTypeBadge } from '@/components/ui/Badge'
+import { ReportIconTile } from '@/components/ui/ReportIcon'
 import { formatDate, cn } from '@/lib/utils'
 import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import ActivityFeed from '@/components/dashboard/ActivityFeed'
@@ -101,9 +102,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 {data.recentlyViewed.map(r => (
                   <Link key={r.id} href={`/folders/${r.folder.id}/reports/${r.id}`} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', r.fileType === 'MD' ? 'bg-violet-50' : 'bg-blue-50')}>
-                      {r.fileType === 'MD' ? <FileCode className="w-3.5 h-3.5 text-violet-500" /> : <FileText className="w-3.5 h-3.5 text-blue-500" />}
-                    </div>
+                    <ReportIconTile type={r.fileType} className="w-7 h-7 [&_svg]:w-3.5 [&_svg]:h-3.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">{r.title}</p>
                       <p className="text-xs text-gray-400">{r.folder.name}</p>
@@ -122,9 +121,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 {data.recentReports.map(r => (
                   <Link key={r.id} href={`/folders/${r.folder.id}/reports/${r.id}`} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', r.fileType === 'MD' ? 'bg-violet-50' : 'bg-blue-50')}>
-                      {r.fileType === 'MD' ? <FileCode className="w-4 h-4 text-violet-500" /> : <FileText className="w-4 h-4 text-blue-500" />}
-                    </div>
+                    <ReportIconTile type={r.fileType} className="w-8 h-8 [&_svg]:w-4 [&_svg]:h-4" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">{r.title}</p>
                       <p className="text-xs text-gray-400 truncate">{r.folder.name} · {r.uploadedBy.name}</p>

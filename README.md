@@ -7,7 +7,8 @@ A Notion-style internal platform for storing, organizing, viewing, and sharing *
 - **Authentication** — JWT in httpOnly cookies, role-based access
 - **Dynamic roles** — admins create/rename/delete roles and assign them to users
 - **Folders & subfolders** — one level of nesting, color coding, collapsible sidebar tree
-- **Reports** — upload `.html` / `.md` files (or drag & drop), view HTML in a sandboxed iframe, render Markdown, edit Markdown in a split-pane editor
+- **Reports** — upload `.html` / `.md` / `.xlsx` files (or drag & drop), or add **links** (Figma, Google Sheets, or any URL). View HTML in a sandboxed iframe, render Markdown, preview Excel as a table, embed Figma/Sheets/links — all shareable with clients via public links
+- **Ask Claude** — in-app launcher to open Claude (your own account) in a side window or new tab
 - **Access control** — share folders with a whole role or a specific user; subfolders inherit parent access and can add their own
 - **Search** — global search across folder names, report titles, tags, and full report content
 - **Dashboard** — stats, GitHub-style activity heatmap (week/month/3-month/year), recently viewed, recent reports, activity feed, pinned folders, shared-with-me, stale-folder alerts, quick upload

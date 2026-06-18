@@ -9,6 +9,26 @@
   body { @apply bg-gray-50 text-gray-900 antialiased; }
 }
 
+/* Rendered Excel sheet (SheetJS sheet_to_html output) */
+.xlsx-table table {
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  background: #fff;
+}
+.xlsx-table td,
+.xlsx-table th {
+  border: 1px solid #e5e7eb;
+  padding: 4px 10px;
+  white-space: nowrap;
+  color: #374151;
+}
+.xlsx-table tr:first-child td {
+  background: #f9fafb;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
 @layer components {
   .sidebar-item {
     @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors cursor-pointer;

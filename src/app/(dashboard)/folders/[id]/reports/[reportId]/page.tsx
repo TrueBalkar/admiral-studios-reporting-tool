@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Calendar, User, FileText, Maximize2, Minimize2,
-  Loader2, ExternalLink, Edit2, Save, X, FileCode, Download,
+  ArrowLeft, Calendar, User, Maximize2, Minimize2,
+  Loader2, ExternalLink, Edit2, Save, X, Download,
   MessageSquare, Tag, History, Link2, Eye, ChevronRight, Trash2,
   Plus, Clock, RotateCcw, Copy, Check,
 } from 'lucide-react'
-import { formatDate, cn } from '@/lib/utils'
+import { formatDate, cn, toEmbedUrl, LINK_TYPES } from '@/lib/utils'
+import { ReportIcon } from '@/components/ui/ReportIcon'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
@@ -42,6 +43,10 @@ export default function ReportViewerPage() {
   const [editContent, setEditContent] = useState('')
   const [editTitle, setEditTitle] = useState('')
   const [mdContent, setMdContent] = useState('')
+  const [xlsxHtml, setXlsxHtml] = useState('')
+  const [xlsxBase64, setXlsxBase64] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [contentLoading, setContentLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
   // Comments
@@ -62,6 +67,29 @@ export default function ReportViewerPage() {
   const [creatingLink, setCreatingLink] = useState(false)
   const [copiedToken, setCopiedToken] = useState('')
 
+  // Fetch + process the report body depending on its type
+  async function loadContent(fileType: string) {
+    setContentLoading(true)
+    try {
+      if (fileType === 'MD') {
+        setMdContent(await fetch(`/api/reports/${reportId}/content`).then(r => r.text()))
+      } else if (fileType === 'XLSX') {
+        const base64 = await fetch(`/api/reports/${reportId}/content`).then(r => r.text())
+        setXlsxBase64(base64)
+        const XLSX = await import('xlsx')
+        const wb = XLSX.read(base64, { type: 'base64' })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        setXlsxHtml(XLSX.utils.sheet_to_html(ws))
+      } else if (LINK_TYPES.includes(fileType as (typeof LINK_TYPES)[number])) {
+        setLinkUrl(await fetch(`/api/reports/${reportId}/content`).then(r => r.text()))
+      }
+    } catch {
+      /* leave empty; UI shows fallback */
+    } finally {
+      setContentLoading(false)
+    }
+  }
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/reports/${reportId}`).then(r => r.json()),
@@ -73,9 +101,7 @@ export default function ReportViewerPage() {
       setCurrentUser(me.user)
       setViewStats(views)
       setTags(d.report.tags ? d.report.tags.split(',').filter(Boolean) : [])
-      if (d.report.fileType === 'MD') {
-        fetch(`/api/reports/${reportId}/content`).then(r => r.text()).then(setMdContent)
-      }
+      loadContent(d.report.fileType)
     }).catch(() => setError('Failed to load')).finally(() => setLoading(false))
 
     // Record view
@@ -202,9 +228,19 @@ export default function ReportViewerPage() {
   }
 
   function downloadFile() {
-    const url = `/api/reports/${reportId}/content`
+    if (!report) return
+    if (report.fileType === 'XLSX' && xlsxBase64) {
+      // Decode base64 → binary Blob for a proper .xlsx download
+      const bytes = Uint8Array.from(atob(xlsxBase64), c => c.charCodeAt(0))
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob); a.download = report.fileName || 'report.xlsx'
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      URL.revokeObjectURL(a.href)
+      return
+    }
     const a = document.createElement('a')
-    a.href = url; a.download = report?.fileName ?? 'report'
+    a.href = `/api/reports/${reportId}/content`; a.download = report.fileName || 'report'
     document.body.appendChild(a); a.click(); document.body.removeChild(a)
   }
 
@@ -216,7 +252,12 @@ export default function ReportViewerPage() {
     </div>
   )
 
-  const isMd = report.fileType === 'MD'
+  const ft = report.fileType
+  const isMd = ft === 'MD'
+  const isHtml = ft === 'HTML'
+  const isXlsx = ft === 'XLSX'
+  const isLink = LINK_TYPES.includes(ft as (typeof LINK_TYPES)[number])
+  const isFile = isMd || isHtml || isXlsx
 
   return (
     <div className="flex flex-col h-screen">
@@ -231,7 +272,7 @@ export default function ReportViewerPage() {
             value={editTitle} onChange={e => setEditTitle(e.target.value)} />
         ) : (
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {isMd ? <FileCode className="w-4 h-4 text-violet-500 flex-shrink-0" /> : <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+            <ReportIcon type={ft} className="w-4 h-4 flex-shrink-0" />
             <h1 className="text-sm font-semibold text-gray-900 truncate">{report.title}</h1>
           </div>
         )}
@@ -268,10 +309,13 @@ export default function ReportViewerPage() {
               </button>
             </>
           )}
-          <button onClick={downloadFile} className="btn-ghost py-1 px-1.5 text-xs" title="Download">
-            <Download className="w-3.5 h-3.5" />
-          </button>
-          {!isMd && <button onClick={() => window.open(`/api/reports/${reportId}/content`, '_blank')} className="btn-ghost py-1 px-1.5 text-xs"><ExternalLink className="w-3.5 h-3.5" /></button>}
+          {isFile && (
+            <button onClick={downloadFile} className="btn-ghost py-1 px-1.5 text-xs" title="Download">
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {isHtml && <button onClick={() => window.open(`/api/reports/${reportId}/content`, '_blank')} className="btn-ghost py-1 px-1.5 text-xs" title="Open in new tab"><ExternalLink className="w-3.5 h-3.5" /></button>}
+          {isLink && linkUrl && <button onClick={() => window.open(linkUrl, '_blank')} className="btn-ghost py-1 px-1.5 text-xs" title="Open original"><ExternalLink className="w-3.5 h-3.5" /></button>}
           <button onClick={() => setFullscreen(v => !v)} className="btn-ghost py-1 px-1.5 text-xs">
             {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
@@ -300,6 +344,33 @@ export default function ReportViewerPage() {
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{mdContent}</ReactMarkdown>
               </div>
             </div>
+          ) : isXlsx ? (
+            contentLoading ? (
+              <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            ) : (
+              <div className="p-6 overflow-auto">
+                <div className="xlsx-table" dangerouslySetInnerHTML={{ __html: xlsxHtml }} />
+              </div>
+            )
+          ) : isLink ? (
+            contentLoading || !linkUrl ? (
+              <div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-50 border-b border-amber-100 text-xs text-amber-700">
+                  <span>Embedded view. If it appears blank, the source may block embedding — open it directly.</span>
+                  <button onClick={() => window.open(linkUrl, '_blank')} className="btn-secondary py-1 px-2.5 text-xs flex-shrink-0">
+                    <ExternalLink className="w-3.5 h-3.5" /> Open original
+                  </button>
+                </div>
+                <iframe
+                  src={toEmbedUrl(ft, linkUrl)}
+                  className="w-full flex-1 border-0"
+                  allow="fullscreen; clipboard-read; clipboard-write"
+                  title={report.title}
+                />
+              </div>
+            )
           ) : (
             <iframe src={`/api/reports/${reportId}/content`} className="w-full h-full border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" title={report.title} />

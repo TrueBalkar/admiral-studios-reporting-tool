@@ -13,6 +13,7 @@ import Logo from './ui/Logo'
 import CreateFolderModal from './CreateFolderModal'
 import NotificationBell from './NotificationBell'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
+import ClaudeAssistant from './ClaudeAssistant'
 
 interface Folder {
   id: string; name: string; type: string; color?: string | null
@@ -319,6 +320,7 @@ export default function Sidebar({ user }: { user: UserProp }) {
 
         {/* Bottom actions */}
         <div className="border-t border-gray-200 px-2 py-2 space-y-0.5">
+          <ClaudeAssistant collapsed={collapsed} />
           {user.role === 'ADMIN' && (
             <Link
               href="/admin"
