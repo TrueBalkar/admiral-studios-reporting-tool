@@ -27,13 +27,14 @@ export default function UploadReportModal({ open, onClose, folderId, onUploaded 
   const [mode, setMode] = useState<Mode>('file')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [styleable, setStyleable] = useState(false)
   const [linkKind, setLinkKind] = useState<LinkKind>('FIGMA')
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  function reset() { setTitle(''); setFile(null); setUrl(''); setError(''); setMode('file'); setLinkKind('FIGMA') }
+  function reset() { setTitle(''); setFile(null); setUrl(''); setError(''); setMode('file'); setLinkKind('FIGMA'); setStyleable(false) }
   function handleClose() { reset(); onClose() }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -54,6 +55,7 @@ export default function UploadReportModal({ open, onClose, folderId, onUploaded 
       if (mode === 'file') {
         if (!file) { setError('Please select a file'); setLoading(false); return }
         const fd = new FormData(); fd.append('title', title.trim()); fd.append('file', file)
+        if (styleable) fd.append('styleable', 'true')
         res = await fetch(`/api/folders/${folderId}/reports`, { method: 'POST', body: fd })
       } else {
         if (!url.trim()) { setError('Please paste a URL'); setLoading(false); return }
@@ -121,6 +123,18 @@ export default function UploadReportModal({ open, onClose, folderId, onUploaded 
               </button>
             )}
             <input ref={fileRef} type="file" accept=".html,.md,.xlsx,.xls,text/html,text/markdown,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleFile} className="hidden" />
+
+            {/* Styleable toggle — only for HTML files */}
+            {file && file.name.toLowerCase().endsWith('.html') && (
+              <label className="flex items-center gap-2.5 mt-3 p-3 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                <input type="checkbox" checked={styleable} onChange={e => setStyleable(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Styleable report</span>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Enable theme switching. Only use for reports generated with the style guide class names.</p>
+                </div>
+              </label>
+            )}
           </div>
         ) : (
           <>

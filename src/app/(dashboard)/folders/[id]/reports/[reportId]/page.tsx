@@ -22,7 +22,9 @@ interface Report {
   id: string; title: string; fileName: string; fileType: string; createdAt: string; tags: string
   folderId: string; folder: { id: string; name: string; type: string }
   uploadedBy: { id: string; name: string }; uploadedById: string
+  styleable: boolean; themeId: string | null
 }
+interface Theme { id: string; name: string; isDefault?: boolean }
 interface Comment { id: string; content: string; createdAt: string; user: { id: string; name: string; role: string } }
 interface Version { id: string; versionNum: number; fileName: string; createdAt: string; uploadedBy: { name: string } }
 interface PublicLink { id: string; token: string; expiresAt: string | null; viewCount: number; hasPassword: boolean; createdAt: string }
@@ -49,6 +51,11 @@ export default function ReportViewerPage() {
   const [contentLoading, setContentLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
+  // Themes
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [activeThemeId, setActiveThemeId] = useState<string | null>(null)
+  const [themeCss, setThemeCss] = useState('')
+  const [htmlContent, setHtmlContent] = useState('')
   // Comments
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -68,9 +75,13 @@ export default function ReportViewerPage() {
   const [copiedToken, setCopiedToken] = useState('')
 
   // Fetch + process the report body depending on its type
-  async function loadContent(fileType: string) {
+  async function loadContent(fileType: string, rep?: Report) {
     setContentLoading(true)
     try {
+      if (fileType === 'HTML') {
+        // Always fetch raw HTML for styleable srcdoc rendering
+        setHtmlContent(await fetch(`/api/reports/${reportId}/content`).then(r => r.text()))
+      }
       if (fileType === 'MD') {
         setMdContent(await fetch(`/api/reports/${reportId}/content`).then(r => r.text()))
       } else if (fileType === 'XLSX') {
@@ -101,7 +112,19 @@ export default function ReportViewerPage() {
       setCurrentUser(me.user)
       setViewStats(views)
       setTags(d.report.tags ? d.report.tags.split(',').filter(Boolean) : [])
-      loadContent(d.report.fileType)
+      loadContent(d.report.fileType, d.report)
+
+      // Load themes for styleable reports
+      if (d.report.styleable) {
+        fetch('/api/themes').then(r => r.json()).then(t => {
+          setThemes(t.themes || [])
+          const tid = d.report.themeId || t.themes?.find((th: Theme) => th.isDefault)?.id
+          if (tid) {
+            setActiveThemeId(tid)
+            fetch(`/api/themes/${tid}/css`).then(r => r.text()).then(setThemeCss)
+          }
+        })
+      }
     }).catch(() => setError('Failed to load')).finally(() => setLoading(false))
 
     // Record view
@@ -111,6 +134,14 @@ export default function ReportViewerPage() {
   const canEdit = currentUser && report && (
     currentUser.role === 'ADMIN' || report.uploadedById === currentUser.userId
   )
+
+  async function switchTheme(themeId: string) {
+    setActiveThemeId(themeId)
+    const css = await fetch(`/api/themes/${themeId}/css`).then(r => r.text())
+    setThemeCss(css)
+    // Persist the choice on the report
+    fetch(`/api/reports/${reportId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ themeId }) }).catch(() => {})
+  }
 
   function togglePanel(p: Panel) { setPanel(prev => prev === p ? null : p) }
 
@@ -296,6 +327,21 @@ export default function ReportViewerPage() {
             </button>
           ))}
 
+          {/* Theme picker — only for styleable HTML reports */}
+          {report?.styleable && themes.length > 0 && (
+            <>
+              <div className="w-px h-4 bg-gray-200 mx-0.5" />
+              <select
+                value={activeThemeId ?? ''}
+                onChange={e => switchTheme(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title="Report theme"
+              >
+                {themes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </>
+          )}
+
           <div className="w-px h-4 bg-gray-200 mx-0.5" />
 
           {!editMode && canEdit && isMd && (
@@ -371,7 +417,16 @@ export default function ReportViewerPage() {
                 />
               </div>
             )
+          ) : report.styleable && themeCss && htmlContent ? (
+            /* Styleable HTML: inject theme CSS via srcdoc */
+            <iframe
+              srcDoc={`<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${themeCss}</style></head><body>${htmlContent}</body></html>`}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+              title={report.title}
+            />
           ) : (
+            /* Regular HTML: serve from API as-is */
             <iframe src={`/api/reports/${reportId}/content`} className="w-full h-full border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" title={report.title} />
           )}

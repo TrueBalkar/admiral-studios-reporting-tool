@@ -65,15 +65,29 @@ model Report {
   fileType     String   @default("HTML")
   content      String
   tags         String   @default("")
+  styleable    Boolean  @default(false)
+  themeId      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   folder     Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
   uploadedBy User            @relation(fields: [uploadedById], references: [id])
+  theme      ReportTheme?    @relation(fields: [themeId], references: [id])
   comments   Comment[]
   views      ReportView[]
   versions   ReportVersion[]
   publicLinks PublicShareLink[]
+}
+
+model ReportTheme {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  cssContent  String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  reports Report[]
 }
 
 model FolderShare {

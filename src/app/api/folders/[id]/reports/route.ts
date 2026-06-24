@@ -35,6 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let fileType = 'HTML'
   let fileName = ''
   let content = ''
+  let formData: FormData | null = null
 
   const contentType = req.headers.get('content-type') || ''
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     try { fileName = new URL(url).hostname } catch { fileName = url }
   } else {
     // File upload (HTML / Markdown / Excel)
-    const formData = await req.formData()
+    formData = await req.formData()
     title = ((formData.get('title') as string) || '').trim()
     const file = formData.get('file') as File | null
     if (!title || !file) return NextResponse.json({ error: 'Title and file are required' }, { status: 400 })
@@ -77,8 +78,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
   }
 
+  // Check for styleable flag (sent via formData for file uploads)
+  let styleable = false
+  let themeId: string | null = null
+  if (formData) {
+    const styleableField = formData.get('styleable')
+    styleable = styleableField === 'true' || styleableField === '1'
+  }
+
+  // Auto-assign default theme for styleable reports
+  if (styleable && fileType === 'HTML') {
+    const defaultTheme = await prisma.reportTheme.findFirst({ where: { isDefault: true } })
+    if (defaultTheme) themeId = defaultTheme.id
+  }
+
   const report = await prisma.report.create({
-    data: { title, folderId: params.id, uploadedById: user.userId, fileName, fileType, content },
+    data: { title, folderId: params.id, uploadedById: user.userId, fileName, fileType, content, styleable, themeId },
     include: { uploadedBy: { select: { id: true, name: true } } },
   })
 
