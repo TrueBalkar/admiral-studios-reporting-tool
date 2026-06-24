@@ -67,16 +67,39 @@ model Report {
   tags         String   @default("")
   styleable    Boolean  @default(false)
   themeId      String?
+  headerId     String?
+  navId        String?
+  footerId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   folder     Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
   uploadedBy User            @relation(fields: [uploadedById], references: [id])
   theme      ReportTheme?    @relation(fields: [themeId], references: [id])
+  header     LayoutComponent? @relation("ReportHeader", fields: [headerId], references: [id])
+  nav        LayoutComponent? @relation("ReportNav",    fields: [navId],    references: [id])
+  footer     LayoutComponent? @relation("ReportFooter", fields: [footerId], references: [id])
   comments   Comment[]
   views      ReportView[]
   versions   ReportVersion[]
   publicLinks PublicShareLink[]
+}
+
+model LayoutComponent {
+  id           String   @id @default(cuid())
+  type         String
+  name         String
+  description  String?
+  htmlTemplate String
+  cssExtra     String   @default("")
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  reportsAsHeader Report[] @relation("ReportHeader")
+  reportsAsNav    Report[] @relation("ReportNav")
+  reportsAsFooter Report[] @relation("ReportFooter")
+
+  @@unique([type, name])
 }
 
 model ReportTheme {

@@ -48,13 +48,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (!canEdit) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { content, title, themeId } = await req.json()
+  const { content, title, themeId, headerId, navId, footerId } = await req.json()
   const updated = await prisma.report.update({
     where: { id: params.id },
     data: {
       ...(content !== undefined ? { content } : {}),
       ...(title?.trim() ? { title: title.trim() } : {}),
       ...(themeId !== undefined ? { themeId } : {}),
+      ...(headerId !== undefined ? { headerId } : {}),
+      ...(navId !== undefined ? { navId } : {}),
+      ...(footerId !== undefined ? { footerId } : {}),
     },
     include: { uploadedBy: { select: { id: true, name: true } } },
   })

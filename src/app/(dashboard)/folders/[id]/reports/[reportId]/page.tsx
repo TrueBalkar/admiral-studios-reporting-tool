@@ -10,6 +10,7 @@ import {
   Plus, Clock, RotateCcw, Copy, Check,
 } from 'lucide-react'
 import { formatDate, cn, toEmbedUrl, LINK_TYPES } from '@/lib/utils'
+import { splitReportHtml, assembleReport } from '@/lib/layout-render'
 import { ReportIcon } from '@/components/ui/ReportIcon'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 import dynamic from 'next/dynamic'
@@ -18,13 +19,35 @@ import remarkGfm from 'remark-gfm'
 
 const MarkdownEditor = dynamic(() => import('@/components/editor/MarkdownEditor'), { ssr: false })
 
+function StyleableIframe({ html, css, title, headerTemplate, navTemplate, footerTemplate }: {
+  html: string; css: string; title: string
+  headerTemplate?: string; navTemplate?: string; footerTemplate?: string
+}) {
+  const parts = splitReportHtml(html)
+  const assembled = assembleReport({
+    ...parts,
+    overrides: {
+      header: headerTemplate,
+      nav: navTemplate,
+      footer: footerTemplate,
+    },
+  })
+  const srcDoc = `<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body>${assembled}</body></html>`
+  return (
+    <iframe srcDoc={srcDoc} className="w-full h-full border-0"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" title={title} />
+  )
+}
+
 interface Report {
   id: string; title: string; fileName: string; fileType: string; createdAt: string; tags: string
   folderId: string; folder: { id: string; name: string; type: string }
   uploadedBy: { id: string; name: string }; uploadedById: string
   styleable: boolean; themeId: string | null
+  headerId: string | null; navId: string | null; footerId: string | null
 }
 interface Theme { id: string; name: string; isDefault?: boolean }
+interface LayoutOption { id: string; type: string; name: string; description?: string | null }
 interface Comment { id: string; content: string; createdAt: string; user: { id: string; name: string; role: string } }
 interface Version { id: string; versionNum: number; fileName: string; createdAt: string; uploadedBy: { name: string } }
 interface PublicLink { id: string; token: string; expiresAt: string | null; viewCount: number; hasPassword: boolean; createdAt: string }
@@ -51,11 +74,16 @@ export default function ReportViewerPage() {
   const [contentLoading, setContentLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
-  // Themes
+  // Themes + layouts
   const [themes, setThemes] = useState<Theme[]>([])
   const [activeThemeId, setActiveThemeId] = useState<string | null>(null)
   const [themeCss, setThemeCss] = useState('')
   const [htmlContent, setHtmlContent] = useState('')
+  const [layouts, setLayouts] = useState<LayoutOption[]>([])
+  const [activeHeaderId, setActiveHeaderId] = useState<string | null>(null)
+  const [activeNavId, setActiveNavId] = useState<string | null>(null)
+  const [activeFooterId, setActiveFooterId] = useState<string | null>(null)
+  const [layoutTemplates, setLayoutTemplates] = useState<Record<string, string>>({})
   // Comments
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -114,7 +142,7 @@ export default function ReportViewerPage() {
       setTags(d.report.tags ? d.report.tags.split(',').filter(Boolean) : [])
       loadContent(d.report.fileType, d.report)
 
-      // Load themes for styleable reports
+      // Load themes + layouts for styleable reports
       if (d.report.styleable) {
         fetch('/api/themes').then(r => r.json()).then(t => {
           setThemes(t.themes || [])
@@ -122,6 +150,18 @@ export default function ReportViewerPage() {
           if (tid) {
             setActiveThemeId(tid)
             fetch(`/api/themes/${tid}/css`).then(r => r.text()).then(setThemeCss)
+          }
+        })
+        fetch('/api/layouts').then(r => r.json()).then(l => {
+          setLayouts(l.layouts || [])
+          setActiveHeaderId(d.report.headerId)
+          setActiveNavId(d.report.navId)
+          setActiveFooterId(d.report.footerId)
+          // Fetch templates for assigned layouts
+          for (const lid of [d.report.headerId, d.report.navId, d.report.footerId].filter(Boolean)) {
+            fetch(`/api/layouts/${lid}`).then(r => r.json()).then(data => {
+              if (data.layout) setLayoutTemplates(prev => ({ ...prev, [data.layout.id]: data.layout.htmlTemplate }))
+            })
           }
         })
       }
@@ -134,6 +174,22 @@ export default function ReportViewerPage() {
   const canEdit = currentUser && report && (
     currentUser.role === 'ADMIN' || report.uploadedById === currentUser.userId
   )
+
+  async function switchLayout(type: 'HEADER' | 'NAV' | 'FOOTER', layoutId: string | null) {
+    const fieldMap = { HEADER: 'headerId', NAV: 'navId', FOOTER: 'footerId' } as const
+    const setterMap = { HEADER: setActiveHeaderId, NAV: setActiveNavId, FOOTER: setActiveFooterId }
+    setterMap[type](layoutId)
+    // Fetch template if we don't have it
+    if (layoutId && !layoutTemplates[layoutId]) {
+      const data = await fetch(`/api/layouts/${layoutId}`).then(r => r.json())
+      if (data.layout) setLayoutTemplates(prev => ({ ...prev, [data.layout.id]: data.layout.htmlTemplate }))
+    }
+    // Persist
+    fetch(`/api/reports/${reportId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [fieldMap[type]]: layoutId }),
+    }).catch(() => {})
+  }
 
   async function switchTheme(themeId: string) {
     setActiveThemeId(themeId)
@@ -327,18 +383,35 @@ export default function ReportViewerPage() {
             </button>
           ))}
 
-          {/* Theme picker — only for styleable HTML reports */}
+          {/* Theme + layout pickers — only for styleable HTML reports */}
           {report?.styleable && themes.length > 0 && (
             <>
               <div className="w-px h-4 bg-gray-200 mx-0.5" />
-              <select
-                value={activeThemeId ?? ''}
-                onChange={e => switchTheme(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                title="Report theme"
-              >
+              <select value={activeThemeId ?? ''} onChange={e => switchTheme(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" title="Theme">
                 {themes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
+              {layouts.filter(l => l.type === 'HEADER').length > 0 && (
+                <select value={activeHeaderId ?? ''} onChange={e => switchLayout('HEADER', e.target.value || null)}
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" title="Header layout">
+                  <option value="">Default header</option>
+                  {layouts.filter(l => l.type === 'HEADER').map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              )}
+              {layouts.filter(l => l.type === 'NAV').length > 0 && (
+                <select value={activeNavId ?? ''} onChange={e => switchLayout('NAV', e.target.value || null)}
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" title="Navigation layout">
+                  <option value="">Default nav</option>
+                  {layouts.filter(l => l.type === 'NAV').map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              )}
+              {layouts.filter(l => l.type === 'FOOTER').length > 0 && (
+                <select value={activeFooterId ?? ''} onChange={e => switchLayout('FOOTER', e.target.value || null)}
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" title="Footer layout">
+                  <option value="">Default footer</option>
+                  {layouts.filter(l => l.type === 'FOOTER').map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              )}
             </>
           )}
 
@@ -418,12 +491,10 @@ export default function ReportViewerPage() {
               </div>
             )
           ) : report.styleable && themeCss && htmlContent ? (
-            /* Styleable HTML: inject theme CSS via srcdoc */
-            <iframe
-              srcDoc={`<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${themeCss}</style></head><body>${htmlContent}</body></html>`}
-              className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
-              title={report.title}
+            <StyleableIframe html={htmlContent} css={themeCss} title={report.title}
+              headerTemplate={activeHeaderId ? layoutTemplates[activeHeaderId] : undefined}
+              navTemplate={activeNavId ? layoutTemplates[activeNavId] : undefined}
+              footerTemplate={activeFooterId ? layoutTemplates[activeFooterId] : undefined}
             />
           ) : (
             /* Regular HTML: serve from API as-is */
