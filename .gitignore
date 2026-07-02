@@ -12,11 +12,15 @@ next-env.d.ts
 # production
 /build
 
-# database (local SQLite — regenerate with prisma db push + seed)
+# database
 *.db
 *.db-journal
-/prisma/dev.db
-/prisma/*.db
+
+# python backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
 
 # env / secrets
 .env

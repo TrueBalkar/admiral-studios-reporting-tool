@@ -10,15 +10,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // /api/* is proxied straight through to the FastAPI backend (see next.config.js
+  // rewrites) — the backend enforces its own auth per-route, so middleware
+  // doesn't need to gate it here.
   if (pathname.startsWith('/api/')) {
-    const token = req.cookies.get('auth-token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const user = await verifyJWT(token)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
     return NextResponse.next()
   }
 
