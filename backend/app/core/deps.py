@@ -20,7 +20,10 @@ async def get_current_user(
     payload = decode_access_token(auth_token)
     if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-    return TokenPayload(**{k: payload[k] for k in ("user_id", "email", "role", "name")})
+    # payload uses camelCase claim names (userId, email, role, name) — TokenPayload's
+    # alias_generator maps "userId" -> the user_id field. Extra claims (e.g. "exp")
+    # are silently ignored (Pydantic's default extra="ignore").
+    return TokenPayload(**payload)
 
 
 CurrentUser = Annotated[TokenPayload, Depends(get_current_user)]

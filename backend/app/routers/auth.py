@@ -29,7 +29,7 @@ async def login(body: LoginRequest, response: Response, db: DbSession):
     if not user or not verify_password(body.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    token = create_access_token({"user_id": user.id, "email": user.email, "role": user.role, "name": user.name})
+    token = create_access_token({"userId": user.id, "email": user.email, "role": user.role, "name": user.name})
     _set_auth_cookie(response, token)
     return LoginResponse(user=UserPublic(id=user.id, name=user.name, email=user.email, role=user.role))
 

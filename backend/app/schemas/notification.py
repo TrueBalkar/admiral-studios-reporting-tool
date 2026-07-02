@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from app.schemas.base import CamelModel
 
 
-class NotificationOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class NotificationOut(CamelModel):
     id: str
     type: str
     title: str
@@ -15,5 +14,5 @@ class NotificationOut(BaseModel):
     created_at: datetime
 
 
-class NotificationMarkRead(BaseModel):
+class NotificationMarkRead(CamelModel):
     id: str  # notification id, or the literal "all"

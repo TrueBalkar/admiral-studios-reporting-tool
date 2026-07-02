@@ -65,4 +65,4 @@ async def delete_role(role_id: str, admin: AdminUser, db: DbSession):
     await db.execute(update(User).where(User.role == role.name).values(role=fallback))
     await db.delete(role)
     await db.commit()
-    return {"ok": True, "reset_to": fallback}
+    return {"ok": True, "resetTo": fallback}

@@ -96,8 +96,11 @@ async def patch_report(report_id: str, body: ReportPatch, user: CurrentUser, db:
 
     await record_activity(db, user.user_id, user.name, "EDIT_REPORT", target_id=report.id, target_name=report.title, folder_id=report.folder_id, folder_name=report.folder.name)
     await db.commit()
-    await db.refresh(report)
-    return {"report": ReportOut.model_validate(report)}
+
+    # Re-query with eager loading rather than db.refresh(), which expires
+    # (and would force a lazy-load of) the uploaded_by relationship.
+    result = await db.execute(select(Report).options(selectinload(Report.uploaded_by)).where(Report.id == report_id))
+    return {"report": ReportOut.model_validate(result.scalar_one())}
 
 
 @router.delete("/{report_id}")

@@ -1,7 +1,7 @@
 import csv
 import io
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 from sqlalchemy import func, select
 
 from app.core.deps import AdminUser, DbSession
@@ -12,7 +12,12 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 @router.get("/audit")
-async def get_audit_log(admin: AdminUser, db: DbSession, page: int = 1, limit: int = 50, action: str = "", user_id: str = "", csv_export: bool = False):
+async def get_audit_log(
+    admin: AdminUser, db: DbSession,
+    page: int = 1, limit: int = 50, action: str = "",
+    user_id: str = Query("", alias="userId"),
+    csv_export: bool = Query(False, alias="csv"),
+):
     filters = []
     if action:
         filters.append(Activity.action == action)
@@ -32,7 +37,7 @@ async def get_audit_log(admin: AdminUser, db: DbSession, page: int = 1, limit: i
     total = await db.scalar(select(func.count()).select_from(Activity).where(*filters)) or 0
     result = await db.execute(select(Activity).where(*filters).order_by(Activity.created_at.desc()).offset((page - 1) * limit).limit(limit))
     items = [
-        {"id": a.id, "user_name": a.user_name, "action": a.action, "target_name": a.target_name, "folder_name": a.folder_name, "created_at": a.created_at}
+        {"id": a.id, "userName": a.user_name, "action": a.action, "targetName": a.target_name, "folderName": a.folder_name, "createdAt": a.created_at}
         for a in result.scalars().all()
     ]
     pages = (total + limit - 1) // limit if limit else 1

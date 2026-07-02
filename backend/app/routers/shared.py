@@ -1,18 +1,18 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Response
-from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import DbSession
 from app.core.security import verify_password
 from app.models.sharing import PublicShareLink
+from app.schemas.base import CamelModel
 
 router = APIRouter(prefix="/api/shared", tags=["shared"])
 
 
-class PasswordBody(BaseModel):
+class PasswordBody(CamelModel):
     password: str | None = None
 
 
@@ -32,7 +32,7 @@ async def access_shared(token: str, body: PasswordBody, db: DbSession):
     await db.execute(update(PublicShareLink).where(PublicShareLink.id == link.id).values(view_count=PublicShareLink.view_count + 1))
     await db.commit()
 
-    return {"title": link.report.title, "file_type": link.report.file_type}
+    return {"title": link.report.title, "fileType": link.report.file_type}
 
 
 @router.post("/{token}/content")

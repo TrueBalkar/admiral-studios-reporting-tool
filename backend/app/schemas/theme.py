@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from app.schemas.base import CamelModel
 
 
-class ThemeOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class ThemeOut(CamelModel):
     id: str
     name: str
     description: Optional[str] = None
@@ -17,21 +16,20 @@ class ThemeDetailOut(ThemeOut):
     css_content: str
 
 
-class ThemeCreate(BaseModel):
+class ThemeCreate(CamelModel):
     name: str
     description: Optional[str] = None
     css_content: str
 
 
-class ThemeUpdate(BaseModel):
+class ThemeUpdate(CamelModel):
     name: Optional[str] = None
     description: Optional[str] = None
     css_content: Optional[str] = None
     is_default: Optional[bool] = None
 
 
-class LayoutOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class LayoutOut(CamelModel):
     id: str
     type: str
     name: str
@@ -45,7 +43,7 @@ class LayoutDetailOut(LayoutOut):
     css_extra: str
 
 
-class LayoutCreate(BaseModel):
+class LayoutCreate(CamelModel):
     type: str
     name: str
     description: Optional[str] = None
@@ -53,7 +51,7 @@ class LayoutCreate(BaseModel):
     css_extra: str = ""
 
 
-class LayoutUpdate(BaseModel):
+class LayoutUpdate(CamelModel):
     name: Optional[str] = None
     description: Optional[str] = None
     html_template: Optional[str] = None

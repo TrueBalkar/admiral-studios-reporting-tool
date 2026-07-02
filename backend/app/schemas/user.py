@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import EmailStr
+
+from app.schemas.base import CamelModel
 
 
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class UserOut(CamelModel):
     id: str
     name: str
     email: str
@@ -13,40 +14,39 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
-class UserCreate(BaseModel):
+class UserCreate(CamelModel):
     name: str
     email: EmailStr
     password: str
     role: str = "SALES"
 
 
-class UserRoleUpdate(BaseModel):
+class UserRoleUpdate(CamelModel):
     user_id: str
     role: str
 
 
-class UserDelete(BaseModel):
+class UserDelete(CamelModel):
     user_id: str
 
 
-class RoleOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class RoleOut(CamelModel):
     id: str
     name: str
     is_built_in: bool
     is_default: bool
 
 
-class RoleCreate(BaseModel):
+class RoleCreate(CamelModel):
     name: str
 
 
-class RoleUpdate(BaseModel):
+class RoleUpdate(CamelModel):
     name: Optional[str] = None
     is_default: Optional[bool] = None
 
 
-class ProfileUpdate(BaseModel):
+class ProfileUpdate(CamelModel):
     name: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None

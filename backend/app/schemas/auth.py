@@ -1,24 +1,26 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
+
+from app.schemas.base import CamelModel
 
 
-class TokenPayload(BaseModel):
+class TokenPayload(CamelModel):
     user_id: str
     email: str
     role: str
     name: str
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(CamelModel):
     email: EmailStr
     password: str
 
 
-class UserPublic(BaseModel):
+class UserPublic(CamelModel):
     id: str
     name: str
     email: str
     role: str
 
 
-class LoginResponse(BaseModel):
+class LoginResponse(CamelModel):
     user: UserPublic

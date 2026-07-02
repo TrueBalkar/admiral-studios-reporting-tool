@@ -45,7 +45,7 @@ async def create_version(report_id: str, user: CurrentUser, db: DbSession, file:
     report.file_name = file.filename or report.file_name
 
     await db.commit()
-    return {"ok": True, "version_num": next_num}
+    return {"ok": True, "versionNum": next_num}
 
 
 @router.get("/{report_id}/versions/{version_id}")

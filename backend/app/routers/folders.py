@@ -62,7 +62,7 @@ async def _to_folder_out(db: AsyncSession, f: Folder) -> FolderOut:
 @router.get("")
 async def list_folders(user: CurrentUser, db: DbSession):
     result = await db.execute(
-        select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares), selectinload(Folder.parent).selectinload(Folder.shares))
+        select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares).selectinload(FolderShare.user), selectinload(Folder.parent).selectinload(Folder.shares).selectinload(FolderShare.user))
     )
     all_folders = result.scalars().all()
 
@@ -101,7 +101,7 @@ async def create_folder(body: FolderCreate, user: CurrentUser, db: DbSession):
     )
     await db.commit()
 
-    result = await db.execute(select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares)).where(Folder.id == folder.id))
+    result = await db.execute(select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares).selectinload(FolderShare.user)).where(Folder.id == folder.id))
     folder = result.scalar_one()
     return {"folder": await _to_folder_out(db, folder)}
 
@@ -115,7 +115,7 @@ async def get_folder(folder_id: str, user: CurrentUser, db: DbSession):
             selectinload(Folder.shares).selectinload(FolderShare.user),
             selectinload(Folder.parent),
             selectinload(Folder.children).selectinload(Folder.created_by),
-            selectinload(Folder.children).selectinload(Folder.shares),
+            selectinload(Folder.children).selectinload(Folder.shares).selectinload(FolderShare.user),
         )
         .where(Folder.id == folder_id)
     )
@@ -154,7 +154,7 @@ async def update_folder(folder_id: str, body: FolderUpdate, user: CurrentUser, d
         folder.color = body.color or None
 
     await db.commit()
-    result = await db.execute(select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares)).where(Folder.id == folder_id))
+    result = await db.execute(select(Folder).options(selectinload(Folder.created_by), selectinload(Folder.shares).selectinload(FolderShare.user)).where(Folder.id == folder_id))
     folder = result.scalar_one()
     return {"folder": await _to_folder_out(db, folder)}
 

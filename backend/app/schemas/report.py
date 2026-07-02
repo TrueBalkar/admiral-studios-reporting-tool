@@ -1,23 +1,21 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from app.schemas.base import CamelModel
 
 
-class UploaderOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class UploaderOut(CamelModel):
     id: str
     name: str
 
 
-class ReportFolderOut(BaseModel):
+class ReportFolderOut(CamelModel):
     id: str
     name: str
     type: str
 
 
-class ReportOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class ReportOut(CamelModel):
     id: str
     title: str
     file_name: str
@@ -39,13 +37,13 @@ class ReportDetailOut(ReportOut):
     folder: ReportFolderOut
 
 
-class LinkReportCreate(BaseModel):
+class LinkReportCreate(CamelModel):
     title: str
     url: str
     link_kind: str = "LINK"  # FIGMA | GSHEET | LINK
 
 
-class ReportPatch(BaseModel):
+class ReportPatch(CamelModel):
     content: Optional[str] = None
     title: Optional[str] = None
     theme_id: Optional[str] = None
@@ -54,42 +52,38 @@ class ReportPatch(BaseModel):
     footer_id: Optional[str] = None
 
 
-class TagsUpdate(BaseModel):
+class TagsUpdate(CamelModel):
     tags: List[str]
 
 
-class BulkAction(BaseModel):
+class BulkAction(CamelModel):
     action: str  # delete | move
     report_ids: List[str]
     target_folder_id: Optional[str] = None
 
 
-class CommentUserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class CommentUserOut(CamelModel):
     id: str
     name: str
     role: Optional[str] = None
 
 
-class CommentOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class CommentOut(CamelModel):
     id: str
     content: str
     created_at: datetime
     user: CommentUserOut
 
 
-class CommentCreate(BaseModel):
+class CommentCreate(CamelModel):
     content: str
 
 
-class VersionUploaderOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class VersionUploaderOut(CamelModel):
     name: str
 
 
-class VersionOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class VersionOut(CamelModel):
     id: str
     version_num: int
     file_name: str
@@ -97,8 +91,7 @@ class VersionOut(BaseModel):
     uploaded_by: VersionUploaderOut
 
 
-class PublicLinkOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class PublicLinkOut(CamelModel):
     id: str
     token: str
     expires_at: Optional[datetime] = None
@@ -107,15 +100,15 @@ class PublicLinkOut(BaseModel):
     created_at: datetime
 
 
-class PublicLinkCreate(BaseModel):
+class PublicLinkCreate(CamelModel):
     password: Optional[str] = None
     expires_in_days: Optional[int] = None
 
 
-class PublicLinkDelete(BaseModel):
+class PublicLinkDelete(CamelModel):
     link_id: str
 
 
-class ViewStatsOut(BaseModel):
+class ViewStatsOut(CamelModel):
     total_views: int
     unique_viewers: int

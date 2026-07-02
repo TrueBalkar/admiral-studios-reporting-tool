@@ -47,9 +47,9 @@ async def search(q: str, user: CurrentUser, db: DbSession):
     )
 
     return {
-        "folders": [{"id": f.id, "name": f.name, "type": f.type, "count": {"reports": 0}} for f in matched_folders],
+        "folders": [{"id": f.id, "name": f.name, "type": f.type, "color": f.color, "_count": {"reports": 0}} for f in matched_folders],
         "reports": [
-            {"id": r.id, "title": r.title, "folder": {"id": r.folder.id, "name": r.folder.name, "type": r.folder.type}, "uploaded_by": {"name": r.uploaded_by.name}}
+            {"id": r.id, "title": r.title, "folder": {"id": r.folder.id, "name": r.folder.name, "type": r.folder.type}, "uploadedBy": {"name": r.uploaded_by.name}}
             for r in report_result.scalars().all()
         ],
     }

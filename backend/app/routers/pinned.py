@@ -5,12 +5,12 @@ from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DbSession
 from app.models.folder import Folder, PinnedFolder
-from pydantic import BaseModel
+from app.schemas.base import CamelModel
 
 router = APIRouter(prefix="/api/pinned", tags=["pinned"])
 
 
-class FolderIdBody(BaseModel):
+class FolderIdBody(CamelModel):
     folder_id: str
 
 
@@ -34,8 +34,8 @@ async def list_pinned(user: CurrentUser, db: DbSession):
             "id": p.id,
             "folder": {
                 "id": f.id, "name": f.name, "type": f.type, "color": f.color,
-                "count": {"reports": report_count},
-                "created_by": {"name": f.created_by.name} if f.created_by else None,
+                "_count": {"reports": report_count},
+                "createdBy": {"name": f.created_by.name} if f.created_by else None,
             },
         })
     return {"pinned": out}

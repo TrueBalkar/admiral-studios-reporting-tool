@@ -1,39 +1,38 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
-class FolderCreate(BaseModel):
+class FolderCreate(CamelModel):
     name: str
     type: str = "CUSTOM"
     description: Optional[str] = None
     parent_id: Optional[str] = None
 
 
-class FolderUpdate(BaseModel):
+class FolderUpdate(CamelModel):
     name: Optional[str] = None
     type: Optional[str] = None
     description: Optional[str] = None
     color: Optional[str] = None
 
 
-class FolderCreatorOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class FolderCreatorOut(CamelModel):
     id: str
     name: str
     email: str
 
 
-class FolderShareUserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class FolderShareUserOut(CamelModel):
     id: str
     name: str
     email: str
 
 
-class FolderShareOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class FolderShareOut(CamelModel):
     id: str
     folder_id: str
     share_type: str
@@ -42,23 +41,22 @@ class FolderShareOut(BaseModel):
     user: Optional[FolderShareUserOut] = None
 
 
-class ShareCreate(BaseModel):
+class ShareCreate(CamelModel):
     share_type: str  # ROLE | USER
     role_target: Optional[str] = None
     user_id: Optional[str] = None
 
 
-class ShareDelete(BaseModel):
+class ShareDelete(CamelModel):
     share_id: str
 
 
-class FolderCountOut(BaseModel):
+class FolderCountOut(CamelModel):
     reports: int
-    children: int
+    children: int = 0
 
 
-class FolderOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class FolderOut(CamelModel):
     id: str
     name: str
     type: str
@@ -70,19 +68,21 @@ class FolderOut(BaseModel):
     updated_at: datetime
     created_by: Optional[FolderCreatorOut] = None
     shares: List[FolderShareOut] = []
-    count: FolderCountOut
+    # Prisma-convention "_count" field name — leading underscore means Pydantic
+    # would treat a field literally named "_count" as a private attribute, so
+    # the Python field is "count" with an explicit alias override instead.
+    count: FolderCountOut = Field(alias="_count")
 
 
-class FolderChildOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class FolderChildOut(CamelModel):
     id: str
     name: str
     type: str
     color: Optional[str] = None
-    count: FolderCountOut
+    count: FolderCountOut = Field(alias="_count")
 
 
-class FolderParentOut(BaseModel):
+class FolderParentOut(CamelModel):
     id: str
     name: str
     color: Optional[str] = None

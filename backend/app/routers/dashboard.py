@@ -46,9 +46,9 @@ async def get_dashboard(user: CurrentUser, db: DbSession):
     )
     recent_reports = [
         {
-            "id": r.id, "title": r.title, "file_type": r.file_type, "created_at": r.created_at,
+            "id": r.id, "title": r.title, "fileType": r.file_type, "createdAt": r.created_at,
             "folder": {"id": r.folder.id, "name": r.folder.name, "type": r.folder.type},
-            "uploaded_by": {"name": r.uploaded_by.name},
+            "uploadedBy": {"name": r.uploaded_by.name},
         }
         for r in recent_result.scalars().all()
     ]
@@ -56,7 +56,7 @@ async def get_dashboard(user: CurrentUser, db: DbSession):
     activity_where = [] if is_admin else [Activity.user_id == user.user_id]
     activity_result = await db.execute(select(Activity).where(*activity_where).order_by(Activity.created_at.desc()).limit(20))
     activity_feed = [
-        {"id": a.id, "user_name": a.user_name, "action": a.action, "target_name": a.target_name, "folder_name": a.folder_name, "created_at": a.created_at}
+        {"id": a.id, "userName": a.user_name, "action": a.action, "targetName": a.target_name, "folderName": a.folder_name, "createdAt": a.created_at}
         for a in activity_result.scalars().all()
     ]
 
@@ -93,7 +93,7 @@ async def get_dashboard(user: CurrentUser, db: DbSession):
     stale_folders = stale_folders[:5]
 
     def folder_summary(f: Folder, count: int | None = None):
-        return {"id": f.id, "name": f.name, "type": f.type, "color": f.color, "count": {"reports": count if count is not None else 0}}
+        return {"id": f.id, "name": f.name, "type": f.type, "color": f.color, "_count": {"reports": count if count is not None else 0}}
 
     accessible_report_ids = await db.execute(select(Report.id).where(Report.folder_id.in_(accessible_ids)))
     accessible_report_ids = [r for (r,) in accessible_report_ids.all()]
@@ -110,19 +110,19 @@ async def get_dashboard(user: CurrentUser, db: DbSession):
             continue
         seen.add(v.report_id)
         recently_viewed.append({
-            "id": v.report_id, "title": v.report.title, "file_type": v.report.file_type,
+            "id": v.report_id, "title": v.report.title, "fileType": v.report.file_type,
             "folder": {"id": v.report.folder.id, "name": v.report.folder.name, "type": v.report.folder.type},
-            "viewed_at": v.viewed_at,
+            "viewedAt": v.viewed_at,
         })
         if len(recently_viewed) >= 5:
             break
 
     return {
-        "stats": {"folder_count": len([f for f in accessible if not f.parent_id]), "report_count": report_count, "user_count": user_count},
-        "recent_reports": recent_reports,
-        "activity_feed": activity_feed,
+        "stats": {"folderCount": len([f for f in accessible if not f.parent_id]), "reportCount": report_count, "userCount": user_count},
+        "recentReports": recent_reports,
+        "activityFeed": activity_feed,
         "heatmap": heatmap,
-        "shared_with_me": [folder_summary(f) for f in shared_with_me],
-        "stale_folders": [folder_summary(f, c) for f, c in stale_folders],
-        "recently_viewed": recently_viewed,
+        "sharedWithMe": [folder_summary(f) for f in shared_with_me],
+        "staleFolders": [folder_summary(f, c) for f, c in stale_folders],
+        "recentlyViewed": recently_viewed,
     }

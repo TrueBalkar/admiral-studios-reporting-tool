@@ -28,7 +28,7 @@ async def update_profile(body: ProfileUpdate, user: CurrentUser, response: Respo
     await db.commit()
     await db.refresh(db_user)
 
-    token = create_access_token({"user_id": db_user.id, "email": db_user.email, "role": db_user.role, "name": db_user.name})
+    token = create_access_token({"userId": db_user.id, "email": db_user.email, "role": db_user.role, "name": db_user.name})
     response.set_cookie(
         key=settings.cookie_name, value=token, httponly=True, secure=settings.cookie_secure,
         samesite=settings.cookie_samesite, max_age=60 * 60 * 24 * settings.jwt_expire_days, path="/",

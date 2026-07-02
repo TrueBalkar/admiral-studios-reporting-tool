@@ -13,7 +13,7 @@ async def list_notifications(user: CurrentUser, db: DbSession):
     result = await db.execute(select(Notification).where(Notification.user_id == user.user_id).order_by(Notification.created_at.desc()).limit(30))
     notifications = result.scalars().all()
     unread = await db.scalar(select(func.count()).select_from(Notification).where(Notification.user_id == user.user_id, Notification.read.is_(False)))
-    return {"notifications": [NotificationOut.model_validate(n) for n in notifications], "unread_count": unread or 0}
+    return {"notifications": [NotificationOut.model_validate(n) for n in notifications], "unreadCount": unread or 0}
 
 
 @router.patch("")
