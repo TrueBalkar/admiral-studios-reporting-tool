@@ -39,3 +39,6 @@ yarn-error.log*
 /node_modules/.prisma
 
 .vercel
+
+# claude code local session settings (machine-specific, not shared)
+.claude/settings.local.json
